@@ -1,9 +1,3 @@
-# ReducedLUT for Hodgkin Huxley Cat
+# ReducedLUT for Hodgkin Huxley
 
-## Overview
-
-This repository utilizes ReducedLUT to accelerate Hodgkin Huxley cat simulations.
-
-## Usage
-
-TBD
+This repository utilizes ReducedLUT to accelerate Hodgkin Huxley simulations.
