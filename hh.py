@@ -14,7 +14,7 @@ q10 = 3**(0.1*celsius - 0.63)
 q10 = 1
 
 def to_int(x, min_val, max_val, bitsize):
-    scaled = (x - min_val) / (max_val - min_val) * ((1 << bitsize) - 1) * 0.5
+    scaled = (x - min_val) / (max_val - min_val) * ((1 << bitsize) - 1)
     rounded = jnp.round(scaled)
     clamped = jnp.clip(rounded, 0, (1 << bitsize) - 1)
     return clamped.astype('int32')
@@ -91,9 +91,9 @@ m = to_int(m**3, 0, 1, NBIT)
 h = to_int(h, 0, 1, NBIT)
 
 
-vn = jnp.zeros((1<<(VBIT-1), 1<<(NBIT-1)), dtype=bool).at[v, n].set(True)
-vm = jnp.zeros((1<<(VBIT-1), 1<<(NBIT-1)), dtype=bool).at[v, m].set(True)
-vh = jnp.zeros((1<<(VBIT-1), 1<<(NBIT-1)), dtype=bool).at[v, h].set(True)
+vn = jnp.zeros((1<<(VBIT), 1<<(NBIT)), dtype=bool).at[v, n].set(True)
+vm = jnp.zeros((1<<(VBIT), 1<<(NBIT)), dtype=bool).at[v, m].set(True)
+vh = jnp.zeros((1<<(VBIT), 1<<(NBIT)), dtype=bool).at[v, h].set(True)
 
 plt.title('V N^4')
 plt.imshow(vn)
