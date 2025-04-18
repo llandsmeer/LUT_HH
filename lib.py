@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def latest_stats():
     files = glob.glob('out/mask*.npz')
-    max_num = max(int(f[-7:-4]) for f in files)
+    max_num = max(int(f[8:-4]) for f in files)
     filename = f'out/mask{max_num:03}.npz'
     data = np.load(filename)
     vn_mask = data['vn_mask']
