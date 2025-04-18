@@ -1,46 +1,23 @@
+import sys
+sys.path.append('/home/llandsmeer/repos/llandsmeer/reducedhh')
+
+import numpy
+
+import tqdm
+
 import jax
 import jax.numpy as jnp
 
 import matplotlib.pyplot as plt
 
-dt = 0.01
+import lib
+from lib import to_fixed, from_fixed, gate_next, n_alpha, n_beta, m_alpha, m_beta, h_alpha, h_beta, dt
 
 ena, ek, el = 50, -77, -53
 gna, gk, gl = 120, 36, 0.3
 Cm = 1
 
-celsius = 37
-q10 = 3**(0.1*celsius - 0.63)
-q10 = 1
-
-def to_fixed(x, min_val, max_val, bitsize):
-    if bitsize is None:
-        return x
-    scaled = (x - min_val) / (max_val - min_val) * ((1 << bitsize) - 1)
-    rounded = jnp.round(scaled)
-    clamped = jnp.clip(rounded, 0, (1 << bitsize) - 1)
-    return clamped.astype('int32')
-
-def from_fixed(y, min_val, max_val, bitsize):
-    if bitsize is None:
-        return y
-    max_int = (1 << bitsize) - 1
-    return y / max_int * (max_val - min_val) + min_val
-
-def exprelr(x): return jax.lax.select(jnp.isclose(x, 0), jnp.ones_like(x), x / jnp.expm1(x))
-def m_alpha(V): return exprelr(-0.1*V - 4.0)
-def h_alpha(V): return 0.07*jnp.exp(-0.05*V - 3.25)
-def n_alpha(V): return 0.1*exprelr(-0.1*V - 5.5)
-def m_beta(V):  return 4.0*jnp.exp(-(V + 65.0)/18.0)
-def h_beta(V):  return 1.0/(jnp.exp(-0.1*V - 3.5) + 1.0)
-def n_beta(V):  return 0.125*jnp.exp(-0.0125*V - 0.8125)
-
-def gate_next(v, gate, alpha, beta):
-    tau = 1 / (alpha(v) + beta(v)) / q10
-    inf = alpha(v) / (alpha(v) + beta(v))
-    return inf + (gate - inf) * jnp.exp(-dt / tau)
-
-def simulate(volt_bits: None | int = 12, gate_bits: None | int = 12, ou_tau=1, ou_sigma=5):
+def simulate(volt_bits: None | int = 12, gate_bits: None | int = 12, ou_tau=1, ou_sigma=5, *, seed):
     VOLT_TRANSFORM = -100, 100, volt_bits
     GATE_TRANSFORM = 0, 1, gate_bits
     # LUTS
@@ -80,31 +57,35 @@ def simulate(volt_bits: None | int = 12, gate_bits: None | int = 12, ou_tau=1, o
                 LUT_m_next(v,    m   ),
                 LUT_h_next(v,       h),
                 knext, i_next), (v, n, m, h, iapp)
-    key = jax.random.PRNGKey(0)
+    key = jax.random.PRNGKey(seed)
     _, trace = jax.lax.scan(loop, initial(-64.64948, key), length=1000000)
     return trace
 
-vbit = 13
-gbit = 13
-v, n, m, h, iapp = simulate(vbit, gbit)
-vtrue = simulate(None, None)[0]
+vbit = 12
+gbit = 12
 
-plt.plot(vtrue, color='black')
-plt.plot(from_fixed(v, -100, 100, vbit), '--', color='red')
-plt.show()
+seed_start = 0
+try:
+    seed_start, vn_mask, vm_mask, vh_mask = lib.latest_stats()
+    vn_mask = jnp.array(vn_mask)
+    vm_mask = jnp.array(vm_mask)
+    vh_mask = jnp.array(vh_mask)
+except Exception as ex:
+    print('Could not load previous masks. Start again? [y/N]')
+    if input() == 'y':
+        vn_mask = jnp.zeros((1<<(vbit), 1<<(gbit)), dtype=bool)
+        vm_mask = jnp.zeros((1<<(vbit), 1<<(gbit)), dtype=bool)
+        vh_mask = jnp.zeros((1<<(vbit), 1<<(gbit)), dtype=bool)
+    else:
+        exit(1)
 
-vn = jnp.zeros((1<<(vbit), 1<<(gbit)), dtype=bool).at[v, n].set(True)
-vm = jnp.zeros((1<<(vbit), 1<<(gbit)), dtype=bool).at[v, m].set(True)
-vh = jnp.zeros((1<<(vbit), 1<<(gbit)), dtype=bool).at[v, h].set(True)
-
-plt.title('V N^4')
-plt.imshow(vn)
-
-plt.figure()
-plt.title('V M^3')
-plt.imshow(vm)
-
-plt.figure()
-plt.title('V H')
-plt.imshow(vh)
-plt.show()
+sim = jax.jit(lambda seed: simulate(vbit, gbit, seed=seed))
+for seed in tqdm.tqdm(range(10000)):
+    seed = seed + seed_start
+    v, n, m, h, iapp = sim(seed)
+    vn_mask = vn_mask.at[v, n].set(True)
+    vm_mask = vm_mask.at[v, m].set(True)
+    vh_mask = vh_mask.at[v, h].set(True)
+    print(seed, vn_mask.sum(), vm_mask.sum(), vh_mask.sum(), (1<<vbit) * (1<<gbit))
+    if seed % 10 == 0:
+        numpy.savez(f'out/mask{seed:03d}', vn_mask=vn_mask, vm_mask=vm_mask, vh_mask=vh_mask)
