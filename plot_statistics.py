@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 import lib
 
-vn_mask, vm_mask, vh_mask = lib.latest_stats()
+_, vn_mask, vm_mask, vh_mask = lib.latest_stats()
 fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
 for ax, mask, title in zip(axes, [vn_mask, vm_mask, vh_mask], ['vn_mask', 'vm_mask', 'vh_mask']):

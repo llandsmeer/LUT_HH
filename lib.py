@@ -15,13 +15,18 @@ def latest_stats():
 
     return max_num + 1, vn_mask, vm_mask, vh_mask
 
-def to_fixed(x, min_val, max_val, bitsize):
+def to_fixed(x, min_val, max_val, bitsize, rnd=True):
     if bitsize is None:
         return x
     scaled = (x - min_val) / (max_val - min_val) * ((1 << bitsize) - 1)
-    rounded = jnp.round(scaled)
-    clamped = jnp.clip(rounded, 0, (1 << bitsize) - 1)
-    return clamped.astype('int32')
+    if rnd:
+        rounded = jnp.round(scaled)
+        clamped = jnp.clip(rounded, 0, (1 << bitsize) - 1)
+        return clamped.astype('int32')
+    else:
+        rounded = scaled
+        clamped = jnp.clip(rounded, 0, (1 << bitsize) - 1)
+        return clamped
 
 def from_fixed(y, min_val, max_val, bitsize):
     if bitsize is None:
