@@ -80,12 +80,12 @@ except Exception as ex:
         exit(1)
 
 sim = jax.jit(lambda seed: simulate(vbit, gbit, seed=seed))
-for seed in tqdm.tqdm(range(10000)):
+for seed in tqdm.tqdm(range(100000)):
     seed = seed + seed_start
     v, n, m, h, iapp = sim(seed)
     vn_mask = vn_mask.at[v, n].set(True)
     vm_mask = vm_mask.at[v, m].set(True)
     vh_mask = vh_mask.at[v, h].set(True)
     print(seed, vn_mask.sum(), vm_mask.sum(), vh_mask.sum(), (1<<vbit) * (1<<gbit))
-    if seed % 10 == 0:
+    if seed % 100 == 0:
         numpy.savez(f'out/mask{seed:03d}', vn_mask=vn_mask, vm_mask=vm_mask, vh_mask=vh_mask)

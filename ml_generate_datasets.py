@@ -1,10 +1,7 @@
 import os
 os.environ['JAX_PLATFORMS'] = 'cpu'
 import jax
-import jax.numpy as jnp
 import numpy
-import jax
-import jax.numpy as jnp
 import lib
 from lib import to_fixed, from_fixed, gate_next, n_alpha, n_beta, m_alpha, m_beta, h_alpha, h_beta, dt
 
@@ -30,10 +27,10 @@ numpy.savez('dataset/n_next', v=v, g=g, i=i, o=vn)
 v, g = numpy.where(vm_mask)
 i = v << gbit | g
 vm = jax.vmap(LUT_m_next)(v, g)
-numpy.savez('dataset/m_next', v=v, g=g, i=i, o=vn)
+numpy.savez('dataset/m_next', v=v, g=g, i=i, o=vm)
 
 v, g = numpy.where(vh_mask)
 i = v << gbit | g
 vh = jax.vmap(LUT_h_next)(v, g)
-numpy.savez('dataset/h_next', v=v, g=g, i=i, o=vn)
+numpy.savez('dataset/h_next', v=v, g=g, i=i, o=vh)
 

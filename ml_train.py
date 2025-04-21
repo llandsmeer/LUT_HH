@@ -3,8 +3,10 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-f = numpy.load('./dataset/n_next.npz')
+f = numpy.load('./dataset/h_next.npz')
 i, v, g, o = f['i'], f['v'], f['g'], f['o']
+
+print(i.shape, v.shape, g.shape, o.shape)
 
 inp = numpy.stack([v, g]).T / (1<<12)
 # out = o / (1<<12)
